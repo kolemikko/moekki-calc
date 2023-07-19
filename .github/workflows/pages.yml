@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - '**.rs'
+      - '**.toml'
       - '**.js'
       - '**.html'
 
