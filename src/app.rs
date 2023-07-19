@@ -35,6 +35,9 @@ pub struct MoekkiCalcApp {
     new_person_name: String,
     #[serde(skip)]
     people_to_remove: Vec<usize>,
+
+    #[serde(skip)]
+    days_window_open: bool,
 }
 
 impl Default for MoekkiCalcApp {
@@ -58,6 +61,7 @@ impl Default for MoekkiCalcApp {
             people: Vec::new(),
             new_person_name: String::new(),
             people_to_remove: Vec::new(),
+            days_window_open: true,
         }
     }
 }
@@ -280,95 +284,22 @@ impl MoekkiCalcApp {
             .frame(
                 egui::Frame::none()
                     .stroke(Stroke::new(1.0, Color32::GRAY))
-                    .inner_margin(egui::style::Margin::symmetric(10.0, 10.0)), // .fill(Color32::DARK_GRAY),
+                    .inner_margin(egui::style::Margin::symmetric(10.0, 10.0)),
             )
             .show(ctx, |ui| {
-                ui.heading("Moekki-Calc");
+                ui.horizontal(|ui| {
+                    ui.heading("Moekki-Calc");
+                    ui.add_space(10.0);
+                    ui.toggle_value(&mut self.days_window_open, "Trip definition");
+                });
             });
     }
 
     fn render_central_panel(&mut self, ctx: &egui::Context) {
         egui::CentralPanel::default()
-            .frame(
-                egui::Frame::none().inner_margin(egui::style::Margin::symmetric(30.0, 30.0)), // .fill(Color32::DARK_GRAY),
-            )
+            .frame(egui::Frame::none().inner_margin(egui::style::Margin::symmetric(30.0, 30.0)))
             .show(ctx, |ui| {
                 self.update_removed();
-
-                ui.add_space(20.0);
-                ui.heading("Days");
-                ui.horizontal(|ui| {
-                    if ui.add(egui::Button::new("Add day")).clicked() {
-                        let day_name = format!("{}", self.days.len() + 1);
-                        self.days.push(Day::new(day_name.clone()));
-                        for p in self.people.iter_mut() {
-                            p.attendance.push(Attendance::new(day_name.clone()));
-                        }
-                    }
-                    if ui.add(egui::Button::new("Remove day")).clicked() {
-                        self.days_to_remove.push(self.days.len() - 1);
-                    }
-                });
-                ui.horizontal(|ui| {
-                    for d in self.days.iter_mut() {
-                        ui.vertical(|ui| {
-                            ui.label(format!("Day {}", &d.name));
-                            ui.checkbox(&mut d.servings.breakfast, "Breakfast");
-                            ui.checkbox(&mut d.servings.lunch, "Lunch");
-                            ui.checkbox(&mut d.servings.dinner, "Dinner");
-                            ui.checkbox(&mut d.servings.snacks, "Snacks");
-
-                            ui.label(format!(
-                                "Breakfast: {}",
-                                Currency::new_string(
-                                    &d.breakfast_day_rate.value().to_string(),
-                                    Some(self.currency_opts_eur.clone())
-                                )
-                                .unwrap()
-                                .format()
-                            ));
-                            ui.label(format!(
-                                "Lunch: {}",
-                                Currency::new_string(
-                                    &d.lunch_day_rate.value().to_string(),
-                                    Some(self.currency_opts_eur.clone())
-                                )
-                                .unwrap()
-                                .format()
-                            ));
-                            ui.label(format!(
-                                "Dinner: {}",
-                                Currency::new_string(
-                                    &d.dinner_day_rate.value().to_string(),
-                                    Some(self.currency_opts_eur.clone())
-                                )
-                                .unwrap()
-                                .format()
-                            ));
-                            ui.label(format!(
-                                "Snacks: {}",
-                                Currency::new_string(
-                                    &d.snacks_day_rate.value().to_string(),
-                                    Some(self.currency_opts_eur.clone())
-                                )
-                                .unwrap()
-                                .format()
-                            ));
-                            ui.label(format!(
-                                "Total: {}",
-                                Currency::new_string(
-                                    &d.total_day_rate.value().to_string(),
-                                    Some(self.currency_opts_eur.clone())
-                                )
-                                .unwrap()
-                                .format()
-                            ));
-                        });
-                    }
-                });
-                ui.separator();
-                ui.add_space(20.0);
-
                 ui.heading("Expenses");
                 ui.label("Name of new expense:");
                 ui.add(egui::TextEdit::singleline(&mut self.new_expense_name));
@@ -551,6 +482,91 @@ impl MoekkiCalcApp {
                 }
             });
     }
+
+    fn render_days_window(&mut self, ctx: &egui::Context) {
+        egui::Window::new("Trip definition")
+            .open(&mut self.days_window_open)
+            .resizable(true)
+            .auto_sized()
+            .show(ctx, |ui| {
+                egui::Frame::none()
+                    .inner_margin(egui::style::Margin::symmetric(10.0, 15.0))
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            if ui.add(egui::Button::new("Add day")).clicked() {
+                                let day_name = format!("{}", self.days.len() + 1);
+                                self.days.push(Day::new(day_name.clone()));
+                                for p in self.people.iter_mut() {
+                                    p.attendance.push(Attendance::new(day_name.clone()));
+                                }
+                            }
+                            if ui.add(egui::Button::new("Remove day")).clicked() {
+                                self.days_to_remove.push(self.days.len() - 1);
+                            }
+                        });
+                        ui.add_space(10.0);
+                        ui.horizontal(|ui| {
+                            for d in self.days.iter_mut() {
+                                ui.vertical(|ui| {
+                                    ui.label(format!("Day {}", &d.name));
+                                    ui.checkbox(&mut d.servings.breakfast, "Breakfast");
+                                    ui.checkbox(&mut d.servings.lunch, "Lunch");
+                                    ui.checkbox(&mut d.servings.dinner, "Dinner");
+                                    ui.checkbox(&mut d.servings.snacks, "Snacks");
+
+                                    ui.add_space(5.0);
+                                    ui.label(format!(
+                                        "Breakfast: {}",
+                                        Currency::new_string(
+                                            &d.breakfast_day_rate.value().to_string(),
+                                            Some(self.currency_opts_eur.clone())
+                                        )
+                                        .unwrap()
+                                        .format()
+                                    ));
+                                    ui.label(format!(
+                                        "Lunch: {}",
+                                        Currency::new_string(
+                                            &d.lunch_day_rate.value().to_string(),
+                                            Some(self.currency_opts_eur.clone())
+                                        )
+                                        .unwrap()
+                                        .format()
+                                    ));
+                                    ui.label(format!(
+                                        "Dinner: {}",
+                                        Currency::new_string(
+                                            &d.dinner_day_rate.value().to_string(),
+                                            Some(self.currency_opts_eur.clone())
+                                        )
+                                        .unwrap()
+                                        .format()
+                                    ));
+                                    ui.label(format!(
+                                        "Snacks: {}",
+                                        Currency::new_string(
+                                            &d.snacks_day_rate.value().to_string(),
+                                            Some(self.currency_opts_eur.clone())
+                                        )
+                                        .unwrap()
+                                        .format()
+                                    ));
+                                    ui.label(format!(
+                                        "Total: {}",
+                                        Currency::new_string(
+                                            &d.total_day_rate.value().to_string(),
+                                            Some(self.currency_opts_eur.clone())
+                                        )
+                                        .unwrap()
+                                        .format()
+                                    ));
+                                });
+                                ui.add_space(10.0);
+                            }
+                        });
+                    });
+            });
+    }
 }
 
 impl eframe::App for MoekkiCalcApp {
@@ -559,10 +575,9 @@ impl eframe::App for MoekkiCalcApp {
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        ctx.request_repaint();
-
         self.render_top_panel(ctx);
         self.render_central_panel(ctx);
+        self.render_days_window(ctx);
     }
 }
 
