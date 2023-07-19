@@ -275,15 +275,24 @@ impl MoekkiCalcApp {
         self.update_costs();
     }
 
-    fn render_centralpanel(&mut self, ctx: &egui::Context) {
-        egui::CentralPanel::default()
+    fn render_top_panel(&mut self, ctx: &egui::Context) {
+        egui::TopBottomPanel::top("top-panel")
             .frame(
                 egui::Frame::none()
-                    .stroke(Stroke::new(3.0, Color32::DARK_GREEN))
-                    .inner_margin(egui::style::Margin::symmetric(30.0, 30.0)), // .fill(Color32::DARK_GRAY),
+                    .stroke(Stroke::new(1.0, Color32::GRAY))
+                    .inner_margin(egui::style::Margin::symmetric(10.0, 10.0)), // .fill(Color32::DARK_GRAY),
             )
             .show(ctx, |ui| {
                 ui.heading("Moekki-Calc");
+            });
+    }
+
+    fn render_central_panel(&mut self, ctx: &egui::Context) {
+        egui::CentralPanel::default()
+            .frame(
+                egui::Frame::none().inner_margin(egui::style::Margin::symmetric(30.0, 30.0)), // .fill(Color32::DARK_GRAY),
+            )
+            .show(ctx, |ui| {
                 self.update_removed();
 
                 ui.add_space(20.0);
@@ -552,7 +561,8 @@ impl eframe::App for MoekkiCalcApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.request_repaint();
 
-        self.render_centralpanel(ctx);
+        self.render_top_panel(ctx);
+        self.render_central_panel(ctx);
     }
 }
 
