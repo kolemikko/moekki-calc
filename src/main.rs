@@ -5,28 +5,31 @@ mod types;
 pub use app::MoekkiCalcApp;
 
 #[cfg(not(target_arch = "wasm32"))]
-fn main() {
+fn main() -> eframe::Result<()> {
+    env_logger::init();
+
     let native_options = eframe::NativeOptions::default();
-    let _ = eframe::run_native(
+    eframe::run_native(
         "moekki-calc-native",
         native_options,
         Box::new(|cc| Box::new(MoekkiCalcApp::new(cc))),
-    );
+    )
 }
 
 #[cfg(target_arch = "wasm32")]
 fn main() {
-    // Make sure panics are logged using `console.error`.
-    console_error_panic_hook::set_once();
-
-    // Redirect tracing to console.log and friends:
-    tracing_wasm::set_as_global_default();
+    eframe::WebLogger::init(log::LevelFilter::Debug).ok();
 
     let web_options = eframe::WebOptions::default();
-    eframe::start_web(
-        "moekki-calc-wasm",
-        web_options,
-        Box::new(|cc| Box::new(MoekkiCalcApp::new(cc))),
-    )
-    .expect("failed to start wasm eframe");
+
+    wasm_bindgen_futures::spawn_local(async {
+        eframe::WebRunner::new()
+            .start(
+                "moekki-calc-wasm",
+                web_options,
+                Box::new(|cc| Box::new(MoekkiCalcApp::new(cc))),
+            )
+            .await
+            .expect("failed to start wasm eframe");
+    });
 }

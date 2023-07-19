@@ -1,10 +1,13 @@
+use crate::types::{Attendance, Day, Expense, Person};
 use currency_rs::{Currency, CurrencyOpts};
 use egui::{
     epaint::{Color32, Stroke},
     RichText, Rounding, Vec2,
 };
+use serde::{Deserialize, Serialize};
+use std::ops::RangeInclusive;
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(default)]
 pub struct MoekkiCalcApp {
     #[serde(skip)]
@@ -701,11 +704,4 @@ impl eframe::App for MoekkiCalcApp {
         self.render_top_panel(ctx);
         self.render_central_panel(ctx);
     }
-}
-
-use std::{future::Future, ops::RangeInclusive};
-
-use crate::types::{Attendance, Day, Expense, Person};
-fn execute<F: Future<Output = ()> + 'static>(f: F) {
-    wasm_bindgen_futures::spawn_local(f);
 }
