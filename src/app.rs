@@ -32,6 +32,11 @@ pub struct MoekkiCalcApp {
     new_person_name: String,
     #[serde(skip)]
     people_to_remove: Vec<usize>,
+
+    #[serde(skip)]
+    update_attendances: bool,
+    #[serde(skip)]
+    update_costs: bool,
 }
 
 impl Default for MoekkiCalcApp {
@@ -55,6 +60,8 @@ impl Default for MoekkiCalcApp {
             people: Vec::new(),
             new_person_name: String::new(),
             people_to_remove: Vec::new(),
+            update_attendances: false,
+            update_costs: false,
         }
     }
 }
@@ -182,6 +189,7 @@ impl MoekkiCalcApp {
             }
             p.cost = total_cost;
         }
+        self.update_costs = false;
     }
 
     fn update_attendances(&mut self) {
@@ -199,6 +207,10 @@ impl MoekkiCalcApp {
                         }
                     })
                     .count();
+            } else {
+                for p in self.people.iter_mut() {
+                    p.attendance.get_mut(idx).unwrap().servings.breakfast = false;
+                }
             }
             if d.servings.lunch {
                 d.lunch_attendance_count = self
@@ -213,6 +225,10 @@ impl MoekkiCalcApp {
                         }
                     })
                     .count();
+            } else {
+                for p in self.people.iter_mut() {
+                    p.attendance.get_mut(idx).unwrap().servings.lunch = false;
+                }
             }
             if d.servings.dinner {
                 d.dinner_attendance_count = self
@@ -227,6 +243,10 @@ impl MoekkiCalcApp {
                         }
                     })
                     .count();
+            } else {
+                for p in self.people.iter_mut() {
+                    p.attendance.get_mut(idx).unwrap().servings.dinner = false;
+                }
             }
             if d.servings.snacks {
                 d.snacks_attendance_count = self
@@ -241,8 +261,13 @@ impl MoekkiCalcApp {
                         }
                     })
                     .count();
+            } else {
+                for p in self.people.iter_mut() {
+                    p.attendance.get_mut(idx).unwrap().servings.snacks = false;
+                }
             }
         }
+        self.update_attendances = false;
     }
 
     fn update_removed(&mut self) {
@@ -261,7 +286,7 @@ impl MoekkiCalcApp {
                 p.attendance.remove(idx);
             }
         }
-        self.update_costs();
+        self.update_costs = true;
     }
 
     fn render_top_panel(&mut self, ctx: &egui::Context) {
@@ -307,6 +332,13 @@ impl MoekkiCalcApp {
                         self.render_expenses_frame(ui);
                     });
                 });
+
+                if self.update_attendances {
+                    self.update_attendances();
+                }
+                if self.update_costs {
+                    self.update_costs();
+                }
             });
     }
 
@@ -335,11 +367,17 @@ impl MoekkiCalcApp {
                     for d in self.days.iter_mut() {
                         ui.vertical(|ui| {
                             ui.label(RichText::new(format!("Day {}", &d.name)).strong());
-                            ui.checkbox(&mut d.servings.breakfast, "Breakfast");
-                            ui.checkbox(&mut d.servings.lunch, "Lunch");
-                            ui.checkbox(&mut d.servings.dinner, "Dinner");
-                            ui.checkbox(&mut d.servings.snacks, "Snacks");
-
+                            let resp1 = ui.checkbox(&mut d.servings.breakfast, "Breakfast");
+                            let resp2 = ui.checkbox(&mut d.servings.lunch, "Lunch");
+                            let resp3 = ui.checkbox(&mut d.servings.dinner, "Dinner");
+                            let resp4 = ui.checkbox(&mut d.servings.snacks, "Snacks");
+                            if resp1.changed()
+                                || resp2.changed()
+                                || resp3.changed()
+                                || resp4.changed
+                            {
+                                self.update_attendances = true;
+                            }
                             ui.add_space(5.0);
                             if d.servings.breakfast {
                                 ui.label(format!(
@@ -425,11 +463,10 @@ impl MoekkiCalcApp {
                     self.people
                         .push(Person::new(self.new_person_name.clone(), &self.days));
                     self.new_person_name = String::new();
-                    self.update_costs();
+                    self.update_costs = true;
                 }
                 ui.add_space(20.0);
 
-                let mut update_attendances = false;
                 egui::ScrollArea::vertical()
                     .id_source("people-scrollarea")
                     .min_scrolled_height(600.0)
@@ -448,7 +485,7 @@ impl MoekkiCalcApp {
                                             ui.label(format!("Day {}", &d.day_name));
                                             let resp = ui.checkbox(&mut d.present, "Present");
                                             if resp.changed() {
-                                                update_attendances = true;
+                                                self.update_attendances = true;
                                             }
                                         });
                                         if d.present {
@@ -464,7 +501,7 @@ impl MoekkiCalcApp {
                                                 || resp3.changed()
                                                 || resp4.changed
                                             {
-                                                update_attendances = true;
+                                                self.update_attendances = true;
                                             }
                                         }
                                     });
@@ -482,9 +519,6 @@ impl MoekkiCalcApp {
                                 .format()
                             ));
                             ui.add_space(25.0);
-                        }
-                        if update_attendances {
-                            self.update_attendances();
                         }
                     });
             });
@@ -529,10 +563,9 @@ impl MoekkiCalcApp {
                     ));
                     self.new_expense_name = String::new();
                     self.new_expense_price = 0.0;
-                    self.update_costs();
+                    self.update_costs = true;
                 }
                 ui.add_space(10.0);
-                let mut update_costs = false;
                 egui::ScrollArea::vertical()
                     .id_source("expenses-scrollarea")
                     .min_scrolled_height(600.0)
@@ -588,13 +621,10 @@ impl MoekkiCalcApp {
                                     || resp3.changed()
                                     || resp4.changed
                                 {
-                                    update_costs = true;
+                                    self.update_costs = true;
                                 }
                             });
                             ui.add_space(10.0);
-                        }
-                        if update_costs {
-                            self.update_costs();
                         }
                     });
                 ui.add_space(20.0);
