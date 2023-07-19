@@ -1,7 +1,7 @@
 use currency_rs::{Currency, CurrencyOpts};
 use egui::{
     epaint::{Color32, Stroke},
-    RichText, Rounding,
+    RichText, Rounding, Vec2,
 };
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -274,6 +274,13 @@ impl MoekkiCalcApp {
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.heading("Moekki-Calc");
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
+                        if ui.button("Reset session").clicked() {
+                            self.days.clear();
+                            self.people.clear();
+                            self.expenses.clear();
+                        }
+                    });
                 });
             });
     }
@@ -404,7 +411,10 @@ impl MoekkiCalcApp {
                 ui.add_space(8.0);
                 ui.horizontal(|ui| {
                     ui.label("Name:");
-                    ui.add(egui::TextEdit::singleline(&mut self.new_person_name));
+                    ui.add_sized(
+                        Vec2::new(150.0, 10.0),
+                        egui::TextEdit::singleline(&mut self.new_person_name),
+                    );
                 });
                 ui.add_space(5.0);
                 let allow_add_person = !self.new_person_name.is_empty();
@@ -490,8 +500,12 @@ impl MoekkiCalcApp {
                 ui.add_space(8.0);
                 ui.horizontal(|ui| {
                     ui.label("Name:");
-                    ui.add(egui::TextEdit::singleline(&mut self.new_expense_name));
+                    ui.add_sized(
+                        Vec2::new(150.0, 10.0),
+                        egui::TextEdit::singleline(&mut self.new_expense_name),
+                    );
                 });
+                ui.add_space(5.0);
                 ui.horizontal(|ui| {
                     ui.label("Price:");
                     ui.add(
