@@ -320,7 +320,15 @@ impl MoekkiCalcApp {
             .show(ctx, |ui| {
                 self.update_removed();
 
-                self.render_days_frame(ui);
+                ui.horizontal(|ui| {
+                    ui.vertical(|ui| {
+                        self.render_days_frame(ui);
+                    });
+                    ui.add_space(20.0);
+                    ui.vertical(|ui| {
+                        self.render_balances_frame(ui);
+                    });
+                });
                 ui.add_space(20.0);
 
                 ui.horizontal(|ui| {
@@ -439,13 +447,63 @@ impl MoekkiCalcApp {
             });
     }
 
+    fn render_balances_frame(&mut self, ui: &mut egui::Ui) {
+        egui::Frame::none()
+            .rounding(Rounding::same(20.0))
+            .stroke(Stroke::new(1.0, Color32::GRAY))
+            .inner_margin(egui::style::Margin::symmetric(20.0, 20.0))
+            .show(ui, |ui| {
+                ui.heading("Balances");
+                ui.add_space(8.0);
+                for p in self.people.iter() {
+                    ui.label(
+                        RichText::new(format!(
+                            "{}: {}",
+                            p.name,
+                            Currency::new_string(
+                                &p.cost.to_string(),
+                                Some(self.currency_opts_eur.clone())
+                            )
+                            .unwrap()
+                            .format()
+                        ))
+                        .strong(),
+                    );
+                    ui.add_space(5.0);
+                }
+                ui.add_space(10.0);
+                let covered: f64 = self.people.iter().map(|x| x.cost).sum();
+                ui.horizontal(|ui| {
+                    ui.label(format!(
+                        "Expenses covered: {} / {}",
+                        Currency::new_string(
+                            &covered.to_string(),
+                            Some(self.currency_opts_eur.clone())
+                        )
+                        .unwrap()
+                        .format(),
+                        Currency::new_string(
+                            &self.total_cost.to_string(),
+                            Some(self.currency_opts_eur.clone())
+                        )
+                        .unwrap()
+                        .format()
+                    ));
+                    if covered < self.total_cost {
+                        ui.label(RichText::new("!").color(Color32::RED).strong())
+                            .on_hover_text("All expenses are not covered yet");
+                    }
+                });
+            });
+    }
+
     fn render_people_frame(&mut self, ui: &mut egui::Ui) {
         egui::Frame::none()
             .rounding(Rounding::same(20.0))
             .stroke(Stroke::new(1.0, Color32::GRAY))
             .inner_margin(egui::style::Margin::symmetric(20.0, 20.0))
             .show(ui, |ui| {
-                ui.heading("People");
+                ui.heading("People & Attendance");
                 ui.add_space(8.0);
                 ui.horizontal(|ui| {
                     ui.label("Name:");
@@ -508,16 +566,6 @@ impl MoekkiCalcApp {
                                     ui.add_space(10.0);
                                 }
                             });
-                            ui.add_space(10.0);
-                            ui.label(format!(
-                                "Total: {}",
-                                Currency::new_string(
-                                    &p.cost.to_string(),
-                                    Some(self.currency_opts_eur.clone())
-                                )
-                                .unwrap()
-                                .format()
-                            ));
                             ui.add_space(25.0);
                         }
                     });
