@@ -1,16 +1,17 @@
-use currency_rs::Currency;
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize)]
 pub struct Day {
     pub name: String,
     pub servings: Servings,
-    pub total_day_rate: Currency,
-    pub breakfast_day_rate: Currency,
+    pub total_day_rate: f64,
+    pub breakfast_day_rate: f64,
     pub breakfast_attendance_count: usize,
-    pub lunch_day_rate: Currency,
+    pub lunch_day_rate: f64,
     pub lunch_attendance_count: usize,
-    pub dinner_day_rate: Currency,
+    pub dinner_day_rate: f64,
     pub dinner_attendance_count: usize,
-    pub snacks_day_rate: Currency,
+    pub snacks_day_rate: f64,
     pub snacks_attendance_count: usize,
 }
 
@@ -19,20 +20,20 @@ impl Day {
         Self {
             name,
             servings: Servings::new(),
-            total_day_rate: Currency::new_float(0.0, None),
-            breakfast_day_rate: Currency::new_float(0.0, None),
+            total_day_rate: 0.0,
+            breakfast_day_rate: 0.0,
             breakfast_attendance_count: 0,
-            lunch_day_rate: Currency::new_float(0.0, None),
+            lunch_day_rate: 0.0,
             lunch_attendance_count: 0,
-            dinner_day_rate: Currency::new_float(0.0, None),
+            dinner_day_rate: 0.0,
             dinner_attendance_count: 0,
-            snacks_day_rate: Currency::new_float(0.0, None),
+            snacks_day_rate: 0.0,
             snacks_attendance_count: 0,
         }
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct Servings {
     pub breakfast: bool,
     pub lunch: bool,
@@ -51,6 +52,7 @@ impl Servings {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Expense {
     pub name: String,
     pub price: f64,
@@ -71,6 +73,7 @@ impl Expense {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Attendance {
     pub day_name: String,
     pub present: bool,
@@ -87,10 +90,11 @@ impl Attendance {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Person {
     pub name: String,
     pub attendance: Vec<Attendance>,
-    pub cost: Currency,
+    pub cost: f64,
 }
 
 impl Person {
@@ -106,7 +110,7 @@ impl Person {
         Self {
             name,
             attendance,
-            cost: Currency::new_float(0.0, None),
+            cost: 0.0,
         }
     }
 }

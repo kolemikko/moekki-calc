@@ -9,7 +9,7 @@ use egui::{
 pub struct MoekkiCalcApp {
     #[serde(skip)]
     currency_opts_eur: CurrencyOpts,
-    #[serde(skip)]
+
     expenses: Vec<Expense>,
     #[serde(skip)]
     new_expense_name: String,
@@ -17,22 +17,16 @@ pub struct MoekkiCalcApp {
     new_expense_price: f64,
     #[serde(skip)]
     expenses_to_remove: Vec<usize>,
-    #[serde(skip)]
-    total_breakfast_cost: Currency,
-    #[serde(skip)]
-    total_lunch_cost: Currency,
-    #[serde(skip)]
-    total_dinner_cost: Currency,
-    #[serde(skip)]
-    total_snacks_cost: Currency,
-    #[serde(skip)]
-    total_cost: Currency,
 
-    #[serde(skip)]
+    total_breakfast_cost: f64,
+    total_lunch_cost: f64,
+    total_dinner_cost: f64,
+    total_snacks_cost: f64,
+    total_cost: f64,
+
     days: Vec<Day>,
     #[serde(skip)]
     days_to_remove: Vec<usize>,
-    #[serde(skip)]
     people: Vec<Person>,
     #[serde(skip)]
     new_person_name: String,
@@ -50,11 +44,11 @@ impl Default for MoekkiCalcApp {
             expenses: Vec::new(),
             new_expense_name: String::new(),
             new_expense_price: 0.0,
-            total_breakfast_cost: Currency::new_float(0.0, None),
-            total_lunch_cost: Currency::new_float(0.0, None),
-            total_dinner_cost: Currency::new_float(0.0, None),
-            total_snacks_cost: Currency::new_float(0.0, None),
-            total_cost: Currency::new_float(0.0, None),
+            total_breakfast_cost: 0.0,
+            total_lunch_cost: 0.0,
+            total_dinner_cost: 0.0,
+            total_snacks_cost: 0.0,
+            total_cost: 0.0,
             days: Vec::new(),
             days_to_remove: Vec::new(),
             expenses_to_remove: Vec::new(),
@@ -110,11 +104,12 @@ impl MoekkiCalcApp {
                 total_snacks += divided_price;
             }
         }
-        self.total_cost = Currency::new_float(total, None);
-        self.total_breakfast_cost = Currency::new_float(total_breakfast, None);
-        self.total_lunch_cost = Currency::new_float(total_lunch, None);
-        self.total_dinner_cost = Currency::new_float(total_dinner, None);
-        self.total_snacks_cost = Currency::new_float(total_snacks, None);
+
+        self.total_cost = total;
+        self.total_breakfast_cost = total_breakfast;
+        self.total_lunch_cost = total_lunch;
+        self.total_dinner_cost = total_dinner;
+        self.total_snacks_cost = total_snacks;
 
         let breakfast_divided = self
             .days
@@ -142,33 +137,27 @@ impl MoekkiCalcApp {
 
         for d in self.days.iter_mut() {
             if d.servings.breakfast {
-                d.breakfast_day_rate = Currency::new_float(self.total_breakfast_cost.value(), None)
-                    .divide(breakfast_divided as f64);
+                d.breakfast_day_rate = self.total_breakfast_cost / breakfast_divided as f64;
             } else {
-                d.breakfast_day_rate = Currency::new_float(0.0, None);
+                d.breakfast_day_rate = 0.0;
             }
             if d.servings.lunch {
-                d.lunch_day_rate = Currency::new_float(self.total_lunch_cost.value(), None)
-                    .divide(lunch_divided as f64);
+                d.lunch_day_rate = self.total_lunch_cost / lunch_divided as f64;
             } else {
-                d.lunch_day_rate = Currency::new_float(0.0, None);
+                d.lunch_day_rate = 0.0;
             }
             if d.servings.dinner {
-                d.dinner_day_rate = Currency::new_float(self.total_dinner_cost.value(), None)
-                    .divide(dinner_divided as f64);
+                d.dinner_day_rate = self.total_dinner_cost / dinner_divided as f64;
             } else {
-                d.dinner_day_rate = Currency::new_float(0.0, None);
+                d.dinner_day_rate = 0.0;
             }
             if d.servings.snacks {
-                d.snacks_day_rate = Currency::new_float(self.total_snacks_cost.value(), None)
-                    .divide(snacks_divided as f64);
+                d.snacks_day_rate = self.total_snacks_cost / snacks_divided as f64;
             } else {
-                d.snacks_day_rate = Currency::new_float(0.0, None);
+                d.snacks_day_rate = 0.0;
             }
-            d.total_day_rate = Currency::new_float(d.breakfast_day_rate.value(), None)
-                .add(d.lunch_day_rate.value())
-                .add(d.dinner_day_rate.value())
-                .add(d.snacks_day_rate.value());
+            d.total_day_rate =
+                d.breakfast_day_rate + d.lunch_day_rate + d.dinner_day_rate + d.snacks_day_rate;
         }
 
         for p in self.people.iter_mut() {
@@ -178,23 +167,20 @@ impl MoekkiCalcApp {
                     let day = self.days.get(idx).unwrap();
                     if a.servings.breakfast {
                         total_cost +=
-                            day.breakfast_day_rate.value() / day.breakfast_attendance_count as f64;
+                            day.breakfast_day_rate / day.breakfast_attendance_count as f64;
                     }
                     if a.servings.lunch {
-                        total_cost +=
-                            day.lunch_day_rate.value() / day.lunch_attendance_count as f64;
+                        total_cost += day.lunch_day_rate / day.lunch_attendance_count as f64;
                     }
                     if a.servings.dinner {
-                        total_cost +=
-                            day.dinner_day_rate.value() / day.dinner_attendance_count as f64;
+                        total_cost += day.dinner_day_rate / day.dinner_attendance_count as f64;
                     }
                     if a.servings.snacks {
-                        total_cost +=
-                            day.snacks_day_rate.value() / day.snacks_attendance_count as f64;
+                        total_cost += day.snacks_day_rate / day.snacks_attendance_count as f64;
                     }
                 }
             }
-            p.cost = Currency::new_float(total_cost, None);
+            p.cost = total_cost;
         }
     }
 
@@ -297,7 +283,7 @@ impl MoekkiCalcApp {
             .frame(
                 egui::Frame::none()
                     .fill(Color32::from_rgb(10, 25, 30))
-                    .inner_margin(egui::style::Margin::symmetric(40.0, 50.0)),
+                    .inner_margin(egui::style::Margin::symmetric(80.0, 50.0)),
             )
             .show(ctx, |ui| {
                 self.update_removed();
@@ -352,7 +338,7 @@ impl MoekkiCalcApp {
                                 ui.label(format!(
                                     "Breakfast: {}",
                                     Currency::new_string(
-                                        &d.breakfast_day_rate.value().to_string(),
+                                        &d.breakfast_day_rate.to_string(),
                                         Some(self.currency_opts_eur.clone())
                                     )
                                     .unwrap()
@@ -363,7 +349,7 @@ impl MoekkiCalcApp {
                                 ui.label(format!(
                                     "Lunch: {}",
                                     Currency::new_string(
-                                        &d.lunch_day_rate.value().to_string(),
+                                        &d.lunch_day_rate.to_string(),
                                         Some(self.currency_opts_eur.clone())
                                     )
                                     .unwrap()
@@ -374,7 +360,7 @@ impl MoekkiCalcApp {
                                 ui.label(format!(
                                     "Dinner: {}",
                                     Currency::new_string(
-                                        &d.dinner_day_rate.value().to_string(),
+                                        &d.dinner_day_rate.to_string(),
                                         Some(self.currency_opts_eur.clone())
                                     )
                                     .unwrap()
@@ -385,7 +371,7 @@ impl MoekkiCalcApp {
                                 ui.label(format!(
                                     "Snacks: {}",
                                     Currency::new_string(
-                                        &d.snacks_day_rate.value().to_string(),
+                                        &d.snacks_day_rate.to_string(),
                                         Some(self.currency_opts_eur.clone())
                                     )
                                     .unwrap()
@@ -395,7 +381,7 @@ impl MoekkiCalcApp {
                             ui.label(format!(
                                 "Total: {}",
                                 Currency::new_string(
-                                    &d.total_day_rate.value().to_string(),
+                                    &d.total_day_rate.to_string(),
                                     Some(self.currency_opts_eur.clone())
                                 )
                                 .unwrap()
@@ -436,7 +422,7 @@ impl MoekkiCalcApp {
                 let mut update_attendances = false;
                 egui::ScrollArea::vertical()
                     .id_source("people-scrollarea")
-                    .min_scrolled_height(500.0)
+                    .min_scrolled_height(600.0)
                     .show(ui, |ui| {
                         for (idx, p) in self.people.iter_mut().enumerate() {
                             ui.horizontal(|ui| {
@@ -479,7 +465,7 @@ impl MoekkiCalcApp {
                             ui.label(format!(
                                 "Total: {}",
                                 Currency::new_string(
-                                    &p.cost.value().to_string(),
+                                    &p.cost.to_string(),
                                     Some(self.currency_opts_eur.clone())
                                 )
                                 .unwrap()
@@ -514,6 +500,7 @@ impl MoekkiCalcApp {
                             .max_decimals(2)
                             .clamp_range(RangeInclusive::new(0.0, 1000.0)),
                     );
+                    ui.label(self.currency_opts_eur.symbol());
                 });
                 ui.add_space(5.0);
                 let allow_add_expense =
@@ -534,7 +521,7 @@ impl MoekkiCalcApp {
                 let mut update_costs = false;
                 egui::ScrollArea::vertical()
                     .id_source("expenses-scrollarea")
-                    .min_scrolled_height(500.0)
+                    .min_scrolled_height(600.0)
                     .show(ui, |ui| {
                         for (idx, e) in self.expenses.iter_mut().enumerate() {
                             ui.horizontal(|ui| {
@@ -572,6 +559,16 @@ impl MoekkiCalcApp {
                                 //         });
                                 // }
                                 ui.add_space(10.0);
+                                if !e.serving_type.breakfast
+                                    && !e.serving_type.lunch
+                                    && !e.serving_type.dinner
+                                    && !e.serving_type.snacks
+                                {
+                                    ui.label(RichText::new("!").color(Color32::RED).strong())
+                                        .on_hover_text(
+                                            "Expense must be assigned to at least one serving",
+                                        );
+                                }
                                 if resp1.changed()
                                     || resp2.changed()
                                     || resp3.changed()
@@ -591,7 +588,7 @@ impl MoekkiCalcApp {
                     ui.label(format!(
                         "Total: {}",
                         Currency::new_string(
-                            &self.total_cost.value().to_string(),
+                            &self.total_cost.to_string(),
                             Some(self.currency_opts_eur.clone())
                         )
                         .unwrap()
@@ -600,7 +597,7 @@ impl MoekkiCalcApp {
                     ui.label(format!(
                         "Breakfast: {}",
                         Currency::new_string(
-                            &self.total_breakfast_cost.value().to_string(),
+                            &self.total_breakfast_cost.to_string(),
                             Some(self.currency_opts_eur.clone())
                         )
                         .unwrap()
@@ -609,7 +606,7 @@ impl MoekkiCalcApp {
                     ui.label(format!(
                         "Lunch: {}",
                         Currency::new_string(
-                            &self.total_lunch_cost.value().to_string(),
+                            &self.total_lunch_cost.to_string(),
                             Some(self.currency_opts_eur.clone())
                         )
                         .unwrap()
@@ -618,7 +615,7 @@ impl MoekkiCalcApp {
                     ui.label(format!(
                         "Dinner: {}",
                         Currency::new_string(
-                            &self.total_dinner_cost.value().to_string(),
+                            &self.total_dinner_cost.to_string(),
                             Some(self.currency_opts_eur.clone())
                         )
                         .unwrap()
@@ -627,7 +624,7 @@ impl MoekkiCalcApp {
                     ui.label(format!(
                         "Snacks: {}",
                         Currency::new_string(
-                            &self.total_snacks_cost.value().to_string(),
+                            &self.total_snacks_cost.to_string(),
                             Some(self.currency_opts_eur.clone())
                         )
                         .unwrap()
