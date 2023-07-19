@@ -118,29 +118,13 @@ impl MoekkiCalcApp {
         self.total_dinner_cost = total_dinner;
         self.total_snacks_cost = total_snacks;
 
-        let breakfast_divided = self
-            .days
-            .iter()
-            .filter(|x| x.servings.breakfast == true)
-            .count();
+        let breakfast_divided = self.days.iter().filter(|x| x.servings.breakfast).count();
 
-        let lunch_divided = self
-            .days
-            .iter()
-            .filter(|x| x.servings.lunch == true)
-            .count();
+        let lunch_divided = self.days.iter().filter(|x| x.servings.lunch).count();
 
-        let dinner_divided = self
-            .days
-            .iter()
-            .filter(|x| x.servings.dinner == true)
-            .count();
+        let dinner_divided = self.days.iter().filter(|x| x.servings.dinner).count();
 
-        let snacks_divided = self
-            .days
-            .iter()
-            .filter(|x| x.servings.snacks == true)
-            .count();
+        let snacks_divided = self.days.iter().filter(|x| x.servings.snacks).count();
 
         for d in self.days.iter_mut() {
             if d.servings.breakfast {
@@ -200,11 +184,7 @@ impl MoekkiCalcApp {
                     .iter()
                     .filter(|x| {
                         let a = x.attendance.get(idx).unwrap();
-                        if a.present == true && a.servings.breakfast == true {
-                            true
-                        } else {
-                            false
-                        }
+                        a.present && a.servings.breakfast
                     })
                     .count();
             } else {
@@ -218,11 +198,7 @@ impl MoekkiCalcApp {
                     .iter()
                     .filter(|x| {
                         let a = x.attendance.get(idx).unwrap();
-                        if a.present == true && a.servings.lunch == true {
-                            true
-                        } else {
-                            false
-                        }
+                        a.present && a.servings.lunch
                     })
                     .count();
             } else {
@@ -236,11 +212,7 @@ impl MoekkiCalcApp {
                     .iter()
                     .filter(|x| {
                         let a = x.attendance.get(idx).unwrap();
-                        if a.present == true && a.servings.dinner == true {
-                            true
-                        } else {
-                            false
-                        }
+                        a.present && a.servings.dinner
                     })
                     .count();
             } else {
@@ -254,11 +226,7 @@ impl MoekkiCalcApp {
                     .iter()
                     .filter(|x| {
                         let a = x.attendance.get(idx).unwrap();
-                        if a.present == true && a.servings.snacks == true {
-                            true
-                        } else {
-                            false
-                        }
+                        a.present && a.servings.snacks
                     })
                     .count();
             } else {
@@ -271,16 +239,13 @@ impl MoekkiCalcApp {
     }
 
     fn update_removed(&mut self) {
-        while self.expenses_to_remove.len() > 0 {
-            let idx = self.expenses_to_remove.pop().unwrap();
+        while let Some(idx) = self.expenses_to_remove.pop() {
             self.expenses.remove(idx);
         }
-        while self.people_to_remove.len() > 0 {
-            let idx = self.people_to_remove.pop().unwrap();
+        while let Some(idx) = self.people_to_remove.pop() {
             self.people.remove(idx);
         }
-        while self.days_to_remove.len() > 0 {
-            let idx = self.days_to_remove.pop().unwrap();
+        while let Some(idx) = self.days_to_remove.pop() {
             self.days.remove(idx);
             for p in self.people.iter_mut() {
                 p.attendance.remove(idx);
@@ -621,15 +586,14 @@ impl MoekkiCalcApp {
                         for (idx, e) in self.expenses.iter_mut().enumerate() {
                             ui.horizontal(|ui| {
                                 ui.label(RichText::new(&e.name).strong());
-                                ui.label(format!(
-                                    "{}",
+                                ui.label(
                                     Currency::new_string(
                                         &e.price.to_string(),
-                                        Some(self.currency_opts_eur.clone())
+                                        Some(self.currency_opts_eur.clone()),
                                     )
                                     .unwrap()
-                                    .format()
-                                ));
+                                    .format(),
+                                );
                                 if ui.add(egui::Button::new("x")).clicked() {
                                     self.expenses_to_remove.push(idx);
                                 }
